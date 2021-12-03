@@ -18,6 +18,8 @@ pub enum Arg {
     NoCheck,
 }
 
+const HELP_PADDING: usize = 20;
+
 pub fn command<'a>(cmds: &[Command], cfg: &mut Config, line: &str) {
     let mut it = split::split_n_whitespace(line, 2);
 
@@ -61,7 +63,13 @@ pub fn command<'a>(cmds: &[Command], cfg: &mut Config, line: &str) {
         if tmp.len() != 0 {
             eprintln!("Similar commands:");
             for (usage, desc) in tmp {
-                eprintln!("\t{}\t\t{}", usage, desc)
+                eprintln!(
+                    "    {2}{0:1$}{3}",
+                    " ",
+                    HELP_PADDING - usage.len(),
+                    usage,
+                    desc
+                )
             }
         }
     } else {
@@ -82,19 +90,48 @@ fn limit_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
         let mut it = split::split_n_whitespace(arg.slice, 2);
         if let Some(fst) = it.next() {
             if let Some(rest) = it.next() {
-                eprintln!("Unexpected trailing characters `{}`.", rest.slice);
+                eprintln!("Unexpected trailing characters `{:?}`.", rest.slice);
                 return;
             }
 
             match fst.slice.parse::<usize>() {
                 Ok(n) => cfg.limit = n,
-                Err(e) => eprintln!("Expected number but {}.", e),
+                Err(e) => eprintln!("Expected number but got `{}`.", e),
             }
         } else {
             println!("{}", cfg.limit)
         }
     } else {
         println!("{}", cfg.limit)
+    }
+}
+
+pub const ECHO_COMMAND: Command<'static> = Command {
+    name: "echo",
+    usage: ":echo [bool]",
+    desc: "Manipulate whether to echo lines",
+    args: Arg::NoCheck,
+    fun: echo_command,
+};
+
+fn echo_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
+    if let Some(arg) = arg {
+        let mut it = split::split_n_whitespace(arg.slice, 2);
+        if let Some(fst) = it.next() {
+            if let Some(rest) = it.next() {
+                eprintln!("Unexpected trailing characters `{:?}`.", rest.slice);
+                return;
+            }
+
+            match fst.slice.parse::<bool>() {
+                Ok(b) => cfg.echo = b,
+                Err(e) => eprintln!("Expected boolean but got `{}`.", e),
+            }
+        } else {
+            println!("{}", cfg.limit)
+        }
+    } else {
+        println!("{}", cfg.echo)
     }
 }
 
@@ -201,7 +238,13 @@ pub const HELP_COMMAND: Command<'static> = Command {
 fn help_command(cmds: &[Command], _: &mut Config, _: &str, _: Option<Match>) {
     println!("Available commands:");
     for cmd in cmds {
-        println!("\t{}\t\t{}", cmd.usage, cmd.desc)
+        println!(
+            "    {2}{0:1$}{3}",
+            " ",
+            HELP_PADDING - cmd.usage.len(),
+            cmd.usage,
+            cmd.desc
+        )
     }
 }
 

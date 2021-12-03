@@ -40,11 +40,13 @@ fn interpret(cmds: &[Command], cfg: &mut Config, line: &str) -> bool {
             }
             Some(Err(e)) => eprintln!("{}", e),
             None => {
-                if cfg.file.is_some() && cfg.echo {
+                if cfg.file.is_none() {
+                    // Quit on CTRL+D
+                    println!("");
+                    return line.len() == 0;
+                } else if cfg.echo {
                     println!("")
                 }
-                // FIXME: Quit on CTRL+D
-                //return true;
             }
         }
     }
@@ -62,6 +64,7 @@ fn main() -> Result<(), io::Error> {
 
     let cmds = [
         cmd::BIND_COMMAND,
+        cmd::ECHO_COMMAND,
         cmd::FILE_COMMAND,
         cmd::HELP_COMMAND,
         cmd::LIMIT_COMMAND,
