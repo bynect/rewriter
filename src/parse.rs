@@ -53,13 +53,23 @@ fn token<I: Iterator<Item = char>>(lex: &mut Lexer<I>) -> Result<Token, String> 
                 let mut buf = String::new();
                 while let Some(&c) = it.peek() {
                     match c {
-                        'a'..='z' | 'A'..='Z' => {
+                        'a'..='z' | 'A'..='Z' | '_' => {
                             buf.push(c);
                             it.next();
                         }
                         _ => break,
                     }
                 }
+
+                while let Some(&c) = it.peek() {
+                    if c == '\'' {
+                        buf.push(c);
+                        it.next();
+                    } else {
+                        break;
+                    }
+                }
+
                 return Ok(if buf == "let" {
                     Token::Let
                 } else if buf == "in" {
