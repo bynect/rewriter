@@ -157,7 +157,12 @@ pub fn parse(s: &str) -> Option<Result<Expr, String>> {
         Token::Eof => None,
         t => {
             backtrack(&mut lex, t);
-            Some(parse_expr(&mut lex))
+            let e = parse_expr(&mut lex);
+            if let Ok(Token::Eof) = token(&mut lex) {
+                Some(e)
+            } else {
+                Some(Err(String::from("Parsing error")))
+            }
         }
     }
 }
