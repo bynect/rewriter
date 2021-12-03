@@ -1,19 +1,20 @@
+#[derive(Eq, PartialEq, Debug)]
 pub struct Match<'a> {
-    start: usize,
-    end: usize,
-    slice: &'a str,
-}
-
-pub struct Split<'a, P: Fn(u8) -> bool> {
-    pub slice: &'a [u8],
     pub start: usize,
     pub end: usize,
-    pub done: bool,
-    pub max: Option<usize>,
-    pub pred: P,
+    pub slice: &'a str,
 }
 
-impl<'a, P: Fn(u8) -> bool> Iterator for Split<'a, P> {
+pub struct Split<'a> {
+    slice: &'a [u8],
+    start: usize,
+    end: usize,
+    done: bool,
+    max: Option<usize>,
+    pred: fn(u8) -> bool,
+}
+
+impl<'a> Iterator for Split<'a> {
     type Item = Match<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -31,39 +32,44 @@ impl<'a, P: Fn(u8) -> bool> Iterator for Split<'a, P> {
             self.start += 1;
         }
 
-        let end = self.start;
+        let mut end = self.start;
         if self.start == self.end {
             self.done = true;
         }
 
         if let Some(max) = self.max {
-            if max == 0 {
+            if max <= 1 {
+                end = self.end;
                 self.done = true;
             } else {
                 self.max = Some(max - 1);
             }
         }
 
+        if start == end {
+            return None;
+        }
+
         Some(Match {
             start,
             end,
-            slice: std::str::from_utf8_unchecked(&self.slice[start..end]),
+            slice: std::str::from_utf8(&self.slice[start..end]).unwrap(),
         })
     }
 }
 
-pub fn split_n<'a, P: Fn(u8) -> bool>(s: &'a str, n: usize, p: P) -> Split<'a, P> {
+pub fn split_n<'a>(s: &'a str, n: usize, p: fn(u8) -> bool) -> Split<'a> {
     Split {
         slice: s.as_bytes(),
         start: 0,
         end: s.len(),
-        done: n != 0,
+        done: n == 0,
         max: Some(n),
         pred: p,
     }
 }
 
-pub fn split<'a, P: Fn(u8) -> bool>(s: &'a str, p: P) -> Split<'a, P> {
+pub fn split<'a>(s: &'a str, p: fn(u8) -> bool) -> Split<'a> {
     Split {
         slice: s.as_bytes(),
         start: 0,
@@ -72,4 +78,8 @@ pub fn split<'a, P: Fn(u8) -> bool>(s: &'a str, p: P) -> Split<'a, P> {
         max: None,
         pred: p,
     }
+}
+
+pub fn split_n_whitespace<'a>(s: &'a str, n: usize) -> Split<'a> {
+    split_n(s, n, |b| b == b' ' || b == b'\t' || b == b'\n')
 }
