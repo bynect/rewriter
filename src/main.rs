@@ -1,12 +1,12 @@
-mod dir;
+mod cmd;
 mod expr;
 mod parse;
 mod split;
-mod sub;
+mod subst;
 
 use expr::Expr;
 use std::io::{self, Write};
-use sub::Subst;
+use subst::Subst;
 
 pub struct Config {
     limit: usize,
@@ -33,7 +33,7 @@ fn main() -> Result<(), io::Error> {
         limit: 100usize,
     };
 
-    let dirs = [dir::LIMIT_DIRECTIVE, dir::LET_DIRECTIVE];
+    let cmds = [cmd::LIMIT_COMMAND, cmd::LET_COMMAND];
 
     let mut line = String::new();
     loop {
@@ -43,7 +43,7 @@ fn main() -> Result<(), io::Error> {
 
         // Directives (prefixed by :) or expressions
         if let Some(line) = line.strip_prefix(':') {
-            dir::directive(&dirs, &mut cfg, line);
+            cmd::command(&cmds, &mut cfg, line);
         } else {
             match parse::parse(&line) {
                 Some(Ok(mut e)) => {

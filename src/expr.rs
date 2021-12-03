@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 use crate::Subst;
 use std::fmt;
 
