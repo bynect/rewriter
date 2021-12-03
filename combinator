@@ -1,0 +1,19 @@
+-- SKI combinators
+-- S combinator
+:bind S (\x.\y.\z.x z (y z))
+
+-- K combinator
+:bind K (\x.\y.x)
+
+-- I combinator
+:bind I (\x.x)
+
+-- Fixed-point combinators
+-- Y combinator
+:bind Y (\f.(\x.f (x x)) (\x.f (x x)))
+
+-- Y' combinator
+:bind Y' ((\x.\y.x y z) (\y.\x.y (x y z)))
+
+-- Theta, Turing's fixed-point combinator
+:bind theta ((\x.\y.y (x x y)) (\x.\y.y (x x y)))
