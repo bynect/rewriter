@@ -6,12 +6,17 @@ mod subst;
 
 use cmd::Command;
 use expr::Expr;
+use std::collections::HashMap;
 use std::io::{self, Write};
+use std::path::PathBuf;
 use subst::Subst;
 
 pub struct Config {
     limit: usize,
     subst: Subst<Expr>,
+    echo: bool,
+    file: Option<PathBuf>,
+    bind: HashMap<String, Expr>,
 }
 
 // Commands (prefixed by :) or expressions
@@ -35,8 +40,10 @@ fn interpret(cmds: &[Command], cfg: &mut Config, line: &str) -> bool {
             }
             Some(Err(e)) => eprintln!("{}", e),
             None => {
+                if cfg.file.is_some() && cfg.echo {
+                    println!("")
+                }
                 // FIXME: Quit on CTRL+D
-                println!("");
                 //return true;
             }
         }
@@ -45,30 +52,20 @@ fn interpret(cmds: &[Command], cfg: &mut Config, line: &str) -> bool {
 }
 
 fn main() -> Result<(), io::Error> {
-    let y = Expr::lam(
-        "f",
-        Expr::app(
-            Expr::lam(
-                "x",
-                Expr::app(Expr::var("f"), Expr::app(Expr::var("x"), Expr::var("x"))),
-            ),
-            Expr::lam(
-                "x",
-                Expr::app(Expr::var("f"), Expr::app(Expr::var("x"), Expr::var("x"))),
-            ),
-        ),
-    );
-
     let mut cfg = Config {
-        subst: Subst::new().extend(String::from("Y"), y),
+        subst: Subst::new(),
         limit: 100usize,
+        echo: false,
+        file: None,
+        bind: HashMap::new(),
     };
 
     let cmds = [
+        cmd::BIND_COMMAND,
         cmd::FILE_COMMAND,
         cmd::HELP_COMMAND,
-        cmd::LET_COMMAND,
         cmd::LIMIT_COMMAND,
+        cmd::SHOW_COMMAND,
     ];
 
     let mut line = String::new();

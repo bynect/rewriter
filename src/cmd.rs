@@ -1,7 +1,7 @@
 use crate::{parse, split, split::Match, Config};
 use std::fs::File;
 use std::io::{self, BufRead};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub struct Command<'a> {
     pub name: &'a str,
@@ -98,15 +98,15 @@ fn limit_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
     }
 }
 
-pub const LET_COMMAND: Command<'static> = Command {
-    name: "let",
-    usage: ":let name expr",
-    desc: "Define a persisting substitution",
+pub const BIND_COMMAND: Command<'static> = Command {
+    name: "bind",
+    usage: ":bind name expr",
+    desc: "Define a binding",
     args: Arg::CheckSome,
-    fun: let_command,
+    fun: bind_command,
 };
 
-fn let_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
+fn bind_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
     // Should be checked in command()
     debug_assert!(arg.is_some());
     let arg = arg.unwrap();
@@ -116,7 +116,14 @@ fn let_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
         if let Some(e) = it.next() {
             debug_assert!(it.next().is_none());
             match parse::parse(e.slice) {
-                Some(Ok(e)) => cfg.subst = cfg.subst.extend(x.slice.to_string(), e),
+                Some(Ok(e)) => {
+                    if cfg.echo {
+                        println!("{} = {}", x.slice, &e)
+                    }
+
+                    cfg.bind.insert(x.slice.to_string(), e.clone());
+                    cfg.subst = cfg.subst.extend(x.slice.to_string(), e.clone());
+                }
                 Some(Err(e)) => eprintln!("{}", e),
                 None => eprintln!("Expected expression after binding."),
             };
@@ -141,18 +148,38 @@ fn file_command(cmds: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>)
     debug_assert!(arg.is_some());
     let arg = arg.unwrap();
 
-    fn read(path: &Path) -> io::Result<io::Lines<io::BufReader<File>>> {
+    fn read(path: &PathBuf) -> io::Result<io::Lines<io::BufReader<File>>> {
         let file = File::open(path)?;
         Ok(io::BufReader::new(file).lines())
     }
 
-    let path = Path::new(arg.slice.trim_end());
-    match read(&path) {
+    let name = arg.slice.trim_end();
+    let path = {
+        match Path::new(name).canonicalize() {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("File `{}` failed to load {}", name, e);
+                return;
+            }
+        }
+    };
+
+    if let Some(f) = &cfg.file {
+        if *f == path {
+            eprintln!("File `{}` loads itself.", path.display());
+            return;
+        }
+    }
+
+    let prev = cfg.file.replace(path);
+    match read(cfg.file.as_ref().unwrap()) {
         Ok(lines) => {
             for line in lines {
                 if let Ok(line) = line {
-                    println!(">> {}", line);
-                    if super::interpret(cmds, cfg, &line) {
+                    if cfg.echo {
+                        println!(">> {}", line)
+                    }
+                    if crate::interpret(cmds, cfg, &line) {
                         break;
                     }
                 }
@@ -160,6 +187,7 @@ fn file_command(cmds: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>)
         }
         Err(e) => eprintln!("{}", e),
     }
+    cfg.file = prev;
 }
 
 pub const HELP_COMMAND: Command<'static> = Command {
@@ -174,5 +202,20 @@ fn help_command(cmds: &[Command], _: &mut Config, _: &str, _: Option<Match>) {
     println!("Available commands:");
     for cmd in cmds {
         println!("\t{}\t\t{}", cmd.usage, cmd.desc)
+    }
+}
+
+pub const SHOW_COMMAND: Command<'static> = Command {
+    name: "show",
+    usage: ":show",
+    desc: "Display bindings",
+    args: Arg::CheckNone,
+    fun: show_command,
+};
+
+fn show_command(_: &[Command], cfg: &mut Config, _: &str, _: Option<Match>) {
+    println!("Bindings:");
+    for (k, v) in cfg.bind.iter() {
+        println!("{} = {}", k, v)
     }
 }
