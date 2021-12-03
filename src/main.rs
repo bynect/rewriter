@@ -22,22 +22,37 @@ fn main() -> Result<(), io::Error> {
     );
     let s = Subst::new().extend(String::from("Y"), y);
 
-    let mut limit = 1000usize;
+    let mut limit = 100usize;
     let mut line = String::new();
+
     loop {
         print!(">> ");
         io::stdout().flush()?;
         io::stdin().read_line(&mut line)?;
 
-        if let Some(d) = line.trim().strip_prefix(':') {
-            if let Some(d) = d.strip_prefix("limit") {
-                if let Ok(l) = d.trim_start().parse::<usize>() {
-                    limit = l;
-                } else {
-                    println!("{}", limit);
-                }
+        // Directives or expressions
+        if let Some(d) = line.strip_prefix(':') {
+            let buf = d.split_ascii_whitespace().collect::<Vec<&str>>();
+            if buf.is_empty() {
+                println!("");
             } else {
-                eprintln!("Unrecognized directive {}", d)
+                match buf[0] {
+                    "limit" => {
+                        if buf.len() == 2 {
+                            match buf[1].parse::<usize>() {
+                                Ok(n) => {
+                                    limit = n;
+                                }
+                                Err(e) => eprintln!("{}", e),
+                            }
+                        } else if buf.len() == 1 {
+                            println!("{}", limit);
+                        } else {
+                            eprintln!("Expected 1 or 2 arguments to directive limit")
+                        }
+                    }
+                    _ => eprintln!("Unrecognized directive {}", d),
+                }
             }
         } else {
             match parse::parse(&line) {
