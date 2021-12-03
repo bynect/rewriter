@@ -64,7 +64,12 @@ fn main() -> Result<(), io::Error> {
         limit: 100usize,
     };
 
-    let cmds: [cmd::Command; 3] = [cmd::LIMIT_COMMAND, cmd::LET_COMMAND, cmd::FILE_COMMAND];
+    let cmds = [
+        cmd::FILE_COMMAND,
+        cmd::HELP_COMMAND,
+        cmd::LET_COMMAND,
+        cmd::LIMIT_COMMAND,
+    ];
 
     let mut line = String::new();
     loop {

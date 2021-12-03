@@ -65,10 +65,7 @@ pub fn command<'a>(cmds: &[Command], cfg: &mut Config, line: &str) {
             }
         }
     } else {
-        println!("Available commands:");
-        for cmd in cmds {
-            println!("\t{}\t\t{}", cmd.usage, cmd.desc)
-        }
+        help_command(cmds, cfg, "", None)
     }
 }
 
@@ -162,5 +159,20 @@ fn file_command(cmds: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>)
             }
         }
         Err(e) => eprintln!("{}", e),
+    }
+}
+
+pub const HELP_COMMAND: Command<'static> = Command {
+    name: "help",
+    usage: ":help",
+    desc: "Display this menu",
+    args: Arg::CheckNone,
+    fun: help_command,
+};
+
+fn help_command(cmds: &[Command], _: &mut Config, _: &str, _: Option<Match>) {
+    println!("Available commands:");
+    for cmd in cmds {
+        println!("\t{}\t\t{}", cmd.usage, cmd.desc)
     }
 }
