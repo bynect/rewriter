@@ -1,11 +1,14 @@
 use crate::{parse, split, split::Match, Config};
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
 
 pub struct Command<'a> {
     pub name: &'a str,
     pub usage: &'a str,
     pub desc: &'a str,
     pub args: Arg,
-    pub fun: fn(&mut Config, &str, Option<Match>),
+    pub fun: fn(&[Command], &mut Config, &str, Option<Match>),
 }
 
 #[derive(Eq, PartialEq)]
@@ -29,7 +32,7 @@ pub fn command<'a>(cmds: &[Command], cfg: &mut Config, line: &str) {
                                 cmd.name, rest.slice
                             )
                         } else {
-                            (cmd.fun)(cfg, line, Some(rest))
+                            (cmd.fun)(cmds, cfg, line, Some(rest))
                         }
                     }
                     None => {
@@ -39,7 +42,7 @@ pub fn command<'a>(cmds: &[Command], cfg: &mut Config, line: &str) {
                                 cmd.name
                             )
                         } else {
-                            (cmd.fun)(cfg, line, None)
+                            (cmd.fun)(cmds, cfg, line, None)
                         }
                     }
                 }
@@ -77,15 +80,7 @@ pub const LIMIT_COMMAND: Command<'static> = Command {
     fun: limit_command,
 };
 
-pub const LET_COMMAND: Command<'static> = Command {
-    name: "let",
-    usage: ":let var expr",
-    desc: "Define a persisting substitution",
-    args: Arg::CheckSome,
-    fun: let_command,
-};
-
-fn limit_command(cfg: &mut Config, _: &str, arg: Option<Match>) {
+fn limit_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
     if let Some(arg) = arg {
         let mut it = split::split_n_whitespace(arg.slice, 2);
         if let Some(fst) = it.next() {
@@ -106,7 +101,15 @@ fn limit_command(cfg: &mut Config, _: &str, arg: Option<Match>) {
     }
 }
 
-fn let_command(cfg: &mut Config, _: &str, arg: Option<Match>) {
+pub const LET_COMMAND: Command<'static> = Command {
+    name: "let",
+    usage: ":let name expr",
+    desc: "Define a persisting substitution",
+    args: Arg::CheckSome,
+    fun: let_command,
+};
+
+fn let_command(_: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
     // Should be checked in command()
     debug_assert!(arg.is_some());
     let arg = arg.unwrap();
@@ -125,5 +128,39 @@ fn let_command(cfg: &mut Config, _: &str, arg: Option<Match>) {
         }
     } else {
         eprintln!("Expected binding name and expression.")
+    }
+}
+
+pub const FILE_COMMAND: Command<'static> = Command {
+    name: "file",
+    usage: ":file name",
+    desc: "Parse and evaluate a file",
+    args: Arg::CheckSome,
+    fun: file_command,
+};
+
+fn file_command(cmds: &[Command], cfg: &mut Config, _: &str, arg: Option<Match>) {
+    // Should be checked in command()
+    debug_assert!(arg.is_some());
+    let arg = arg.unwrap();
+
+    fn read(path: &Path) -> io::Result<io::Lines<io::BufReader<File>>> {
+        let file = File::open(path)?;
+        Ok(io::BufReader::new(file).lines())
+    }
+
+    let path = Path::new(arg.slice.trim_end());
+    match read(&path) {
+        Ok(lines) => {
+            for line in lines {
+                if let Ok(line) = line {
+                    println!(">> {}", line);
+                    if super::interpret(cmds, cfg, &line) {
+                        break;
+                    }
+                }
+            }
+        }
+        Err(e) => eprintln!("{}", e),
     }
 }
