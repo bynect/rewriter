@@ -9,8 +9,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "869435dffa333c329b2f9a4b3ef361f1da8a5c0dc4bcdae8f0018160e75f4116"
 
 [[package]]
-name = "rewrite"
-version = "0.1.0"
+name = "rewriter"
+version = "0.0.0"
 dependencies = [
  "immutable-map",
 ]
