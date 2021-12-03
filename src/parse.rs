@@ -1,4 +1,4 @@
-use crate::Exp as Expr;
+use crate::Expr;
 use std::iter::Peekable;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -20,12 +20,6 @@ fn backtrack<I: Iterator<Item = char>>(lex: &mut Lexer<I>, t: Token) {
     debug_assert!(lex.1.is_none());
     lex.1 = Some(t);
 }
-
-//fn token<I: Iterator<Item = char>>(lex: &mut Lexer<I>) -> Result<Token, String> {
-//    let t = token_(lex);
-//    println!("-- {:?}", t);
-//    t
-//}
 
 fn token<I: Iterator<Item = char>>(lex: &mut Lexer<I>) -> Result<Token, String> {
     if let Some(t) = lex.1.take() {

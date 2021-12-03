@@ -13,8 +13,6 @@ pub enum Expr {
     Var(String),
 }
 
-use Expr::*;
-
 //fn substitute(x: &String, e: Box<Expr>, s: &Box<Expr>) -> Box<Expr> {
 //    match *e {
 //        App(e1, e2) => Box::new(App(substitute(x, e1, s), substitute(x, e2, s))),
@@ -141,6 +139,8 @@ fn reduce(e: Expr, s: &Subst<Expr>) -> Option<Expr> {
 //fn var(x: &str) -> Expr {
 //    Var(x.to_owned())
 //}
+
+use Expr::*;
 
 fn is_var(e: &Expr) -> bool {
     match e {
