@@ -12,7 +12,12 @@ struct Config {
     subst: Subst<Expr>,
 }
 
-fn directive(cfg: &mut Config, line: &str) {
+struct Directive {
+    arity: Option<u8>,
+    fun: fn(&mut Config, &str, &str),
+}
+
+fn directive(dir: &[Directive], cfg: &mut Config, line: &str) {
     let buf = split::split_n_whitespace(line, 2).collect::<Vec<_>>();
     if buf.is_empty() {
         println!("");
@@ -92,60 +97,9 @@ fn main() -> Result<(), io::Error> {
         io::stdout().flush()?;
         io::stdin().read_line(&mut line)?;
 
-        // Directives or expressions
+        // Directives (prefixed by :) or expressions
         if let Some(line) = line.strip_prefix(':') {
             directive(&mut cfg, line);
-            //if let Some(d) = line.trim().strip_prefix("limit") {
-            //    if d.is_empty() {
-            //        println!("{}", limit);
-            //    } else {
-            //        match d.parse::<usize>() {
-            //            Ok(n) => {
-            //                limit = n;
-            //            }
-            //            Err(e) => eprintln!("{}", e),
-            //        }
-            //    }
-            //} else {
-            //    eprintln!("Unrecognized directive {}", d);
-            //}
-
-            //let buf = line.split_ascii_whitespace().collect::<Vec<&str>>();
-            //if buf.is_empty() {
-            //    println!("");
-            //} else {
-            //    match buf[0] {
-            //        "limit" => {
-            //            if buf.len() == 2 {
-            //                match buf[1].parse::<usize>() {
-            //                    Ok(n) => {
-            //                        limit = n;
-            //                    }
-            //                    Err(e) => eprintln!("{}", e),
-            //                }
-            //            } else if buf.len() == 1 {
-            //                println!("{}", limit);
-            //            } else {
-            //                eprintln!("Expected 1 or 2 arguments to directive limit")
-            //            }
-            //        }
-            //        "let" => {
-            //            if buf.len() >= 2 {
-            //                let i = buf[2].start;
-            //                match parse::parse(&line[i..]) {
-            //                    Some(Ok(e)) => {
-            //                        subst = subst.extend(buf[1].to_string(), e);
-            //                    }
-            //                    Some(Err(e)) => eprintln!("{}", e),
-            //                    None => eprintln!("Expected expression"),
-            //                };
-            //            } else {
-            //                eprintln!("Expected 2 arguments to directive let")
-            //            }
-            //        }
-            //        _ => eprintln!("Unrecognized directive {}", buf[0]),
-            //    }
-            //}
         } else {
             match parse::parse(&line) {
                 Some(Ok(mut e)) => {
