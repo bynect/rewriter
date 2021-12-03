@@ -85,7 +85,7 @@ fn expect<I: Iterator<Item = char>>(lex: &mut Lexer<I>, e: Token) -> Result<Toke
 }
 
 fn parse_expr<I: Iterator<Item = char>>(lex: &mut Lexer<I>) -> Result<Expr, String> {
-    let e1 = match token(lex)? {
+    let mut e1 = match token(lex)? {
         Token::ParL => {
             let e = parse_expr(lex)?;
             expect(lex, Token::ParR)?;
@@ -118,11 +118,10 @@ fn parse_expr<I: Iterator<Item = char>>(lex: &mut Lexer<I>) -> Result<Expr, Stri
         t => Err(format!("Unexpected token {:?}", t)),
     }?;
 
-    Ok(if let Some(e2) = parse_base(lex) {
-        Expr::App(Box::new(e1), Box::new(e2?))
-    } else {
-        e1
-    })
+    while let Some(e2) = parse_base(lex) {
+        e1 = Expr::App(Box::new(e1), Box::new(e2?));
+    }
+    Ok(e1)
 }
 
 // Result<T, E> -> T | Option<Result<T, E>>
