@@ -68,7 +68,20 @@ fn token<I: Iterator<Item = char>>(lex: &mut Lexer<I>) -> Result<Token, String> 
                     Token::Var(buf)
                 });
             }
-            ' ' | '\t' | '\n' => it.next(),
+            '-' => {
+                if let Some('-') = it.next() {
+                    while let Some(&c) = it.peek() {
+                        if c == '\n' {
+                            break;
+                        } else {
+                            it.next();
+                        }
+                    }
+                }
+            }
+            ' ' | '\t' | '\n' => {
+                it.next();
+            }
             c => Err(format!("Unexpected char {:?}", c))?,
         };
     }

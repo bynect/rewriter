@@ -35,9 +35,9 @@ fn interpret(cmds: &[Command], cfg: &mut Config, line: &str) -> bool {
             }
             Some(Err(e)) => eprintln!("{}", e),
             None => {
-                // Quit on CTRL+D
+                // FIXME: Quit on CTRL+D
                 println!("");
-                return true;
+                //return true;
             }
         }
     }
